@@ -65,12 +65,22 @@ class _ProScreenState extends State<ProScreen> {
           ),
           Center(child: Text(_username)),
           Container(height: 20),
+          if (isLocalProEnabled)
+            ListTile(
+              title: Text(tr('screen.pro.local_powered')),
+              subtitle: Text(tr('screen.pro.local_features_enabled')),
+            ),
           const Divider(),
           Padding(
             padding: const EdgeInsets.all(20),
             child: Text(tr('screen.pro.power_guide')),
           ),
           const Divider(),
+          if (isLocalProEnabled)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(tr('screen.pro.channel_status')),
+            ),
           Row(
             children: [
               Expanded(

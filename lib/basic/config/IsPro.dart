@@ -1,10 +1,17 @@
+import 'dart:io';
+
 import 'package:event/event.dart';
 import 'package:pikapika/basic/Method.dart';
 
 import '../Entities.dart';
 
+/// Windows 本地版本启用会员功能，不修改渠道会员记录。
+bool get isLocalProEnabled => Platform.isWindows;
+
 bool get isPro {
-  return _proInfoAll.proInfoAf.isPro || _proInfoAll.proInfoPat.isPro;
+  return isLocalProEnabled ||
+      _proInfoAll.proInfoAf.isPro ||
+      _proInfoAll.proInfoPat.isPro;
 }
 
 ProInfoAf get proInfoAf => _proInfoAll.proInfoAf;

@@ -299,17 +299,19 @@ class _StreamComicPagerState extends State<StreamComicPager> {
   late String _currentSort = SORT_DEFAULT;
   late int _currentPage = 1;
   late int _maxPage = 0;
-  late List<ComicSimple> _list = [];
+  final List<ComicSimple> _list = [];
   late bool _loading = false;
   late bool _over = false;
   late bool _error = false;
   late bool _noPro = false;
-
-  // late Future<dynamic> _pageFuture;
+  int _requestId = 0;
 
   _onSetOffset(int i) {
     _list.clear();
     _currentPage = i;
+    _over = false;
+    _error = false;
+    _noPro = false;
     _load();
   }
 
@@ -324,41 +326,44 @@ class _StreamComicPagerState extends State<StreamComicPager> {
     _load();
   }
 
-  Future<dynamic> _load() async {
-    setState(() {
-      //_pageFuture =
-      _fetch();
-    });
-  }
+  Future<dynamic> _load() => _fetch();
 
   Future<dynamic> _fetch() async {
+    final requestId = ++_requestId;
+    final requestedPage = _currentPage;
+    final requestedSort = _currentSort;
     _error = false;
     setState(() {
       _loading = true;
     });
     try {
-      var page = await widget.fetchPage(_currentSort, _currentPage);
-      // setState(() {
-      _currentPage++;
+      var page = await widget.fetchPage(requestedSort, requestedPage);
+      if (!mounted || requestId != _requestId) {
+        return;
+      }
+      _currentPage = page.page + 1;
       _maxPage = page.pages;
       _list.addAll(page.docs);
       _over = page.page >= page.pages;
       _noPro = _currentPage > 10 && !isPro;
-      // });
       widget.comicListController?.loadViewed();
     } catch (e, s) {
-      _error = true;
-      print("$e\n$s");
-      rethrow;
+      if (mounted && requestId == _requestId) {
+        _error = true;
+        print("$e\n$s");
+      }
     } finally {
-      setState(() {
-        _loading = false;
-      });
+      if (mounted && requestId == _requestId) {
+        setState(() {
+          _loading = false;
+        });
+      }
     }
   }
 
   @override
   void initState() {
+    _currentSort = widget.coll ? SORT_TIME_NEWEST : SORT_DEFAULT;
     _load();
     _scrollController.addListener(_onScroll);
     super.initState();
@@ -409,10 +414,8 @@ class _StreamComicPagerState extends State<StreamComicPager> {
                   value: _currentSort,
                   onChanged: (String? value) {
                     if (value != null) {
-                      _list = [];
-                      _currentPage = 1;
                       _currentSort = value;
-                      _load();
+                      _onSetOffset(1);
                     }
                   },
                 ),
@@ -458,11 +461,10 @@ class _StreamComicPagerState extends State<StreamComicPager> {
                                 if (num == 0 || num > _maxPage) {
                                   return;
                                 }
-                                if (_currentPage >= 10 && !isPro) {
+                                if (num > 10 && !isPro) {
                                   defaultToast(context, "发电以后才能看10页以后的内容");
                                   return;
                                 }
-                                _currentPage = num;
                                 _onSetOffset(num);
                               },
                               child: const Text('确定'),
